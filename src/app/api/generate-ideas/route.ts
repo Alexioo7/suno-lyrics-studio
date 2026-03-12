@@ -8,10 +8,13 @@ export async function POST(req: NextRequest) {
 
     if (type === "hooks") {
       prompt = `Tu es un parolier expert en musique française. Génère 10 hooks/punchlines percutants pour une chanson sur le thème "${theme}" dans un style "${style}". Chaque hook doit être une phrase courte et mémorable. Réponds avec exactement 10 lignes, une par hook, sans numérotation ni tiret.`;
+
     } else if (type === "titles") {
       prompt = `Tu es un parolier expert en musique française. Génère 10 titres de chansons originaux sur le thème "${theme}" dans un style "${style}". Titres courts (2-5 mots), évocateurs. Réponds avec 10 lignes, un titre par ligne, sans numérotation ni tiret.`;
+
     } else if (type === "ideas20") {
       prompt = `Tu es un parolier expert en musique française. Génère 20 idées de chansons sur le thème "${theme}" dans un style "${style}". Format exact : Titre — Hook. Sans numérotation, une idée par ligne.`;
+
     } else if (type === "rewrite") {
       const modes: Record<string, string> = {
         poetique: "plus poétique avec des métaphores",
@@ -20,16 +23,10 @@ export async function POST(req: NextRequest) {
         intense: "plus intense et émotionnel",
       };
       prompt = `Tu es un parolier expert. Réécris ce texte en version ${modes[mode] ?? mode}. Réponds UNIQUEMENT avec le texte réécrit.\n\nTexte original :\n${text}`;
-    }
-} else if (type === "coach") {
-  prompt = `Tu es un coach expert en écriture de chansons françaises (style ${style}).
-Analyse ces paroles et donne exactement 5 conseils concrets et bienveillants pour les améliorer.
-Chaque conseil doit être actionnable et spécifique (rimes, rythme, mesures, structure, répétitions, images, etc.)
-Format : une phrase par conseil, sans numérotation ni tiret, directement le conseil.
 
-Paroles à analyser :
-${text}`;
-}
+    } else if (type === "coach") {
+      prompt = `Tu es un coach expert en écriture de chansons françaises (style ${style}). Analyse ces paroles et donne exactement 5 conseils concrets et bienveillants pour les améliorer. Chaque conseil doit être actionnable et spécifique (rimes, rythme, mesures, structure, répétitions, images, etc.). Format : une phrase par conseil, sans numérotation ni tiret.\n\nParoles :\n${text}`;
+    }
 
     const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
       method: "POST",

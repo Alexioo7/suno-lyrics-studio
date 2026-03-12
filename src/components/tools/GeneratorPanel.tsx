@@ -1,11 +1,7 @@
-/**
- * Panneau de génération : hooks, punchlines, titres, 20 idées.
- */
 "use client";
 
 import { useState, useCallback } from "react";
 import { Loader2, Lightbulb, Wand2, List, Type } from "lucide-react";
-import { generateHookIdeas, generate20SongIdeas } from "@/lib/utils/rhyme-engine";
 import type { Song } from "@/types";
 
 interface GeneratorPanelProps {
@@ -17,51 +13,41 @@ export default function GeneratorPanel({ song }: GeneratorPanelProps) {
   const [theme, setTheme] = useState(song.mood ?? "");
   const [results, setResults] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedText, setSelectedText] = useState("");
-  const [rewriteStyle, setRewriteStyle] = useState<"poetique" | "sombre" | "simple" | "intense">("poetique");
+  const [error, setError] = useState<string | null>(null);
 
   const generate = useCallback(async () => {
+    if (!theme.trim() && activeGen !== "rewrite") return;
     setIsLoading(true);
     setResults([]);
+    setError(null);
 
     try {
-      if (activeGen === "hooks") {
-        const hooks = generateHookIdeas(theme, song.style ?? "pop", 10);
-        setResults(hooks);
-      } else if (activeGen === "ideas20") {
-        const ideas = generate20SongIdeas(theme || song.title, song.style ?? "pop");
-        setResults(ideas.map((i) => `**${i.title}** — ${i.hook}`));
-      } else if (activeGen === "titles") {
-        // Générer des titres basés sur le thème
-        const titleTemplates = [
-          `${theme} en silence`,
-          `L'heure de ${theme}`,
-          `${theme} — ce soir`,
-          `Quand ${theme} disparaît`,
-          `Au-delà de ${theme}`,
-          `${theme} et cendres`,
-          `La nuit et ${theme}`,
-          `${theme} toujours`,
-          `Mourir pour ${theme}`,
-          `${theme} sans retour`,
-        ];
-        setResults(titleTemplates);
-      }
+      const res = await fetch("/api/generate-ideas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: activeGen,
+          theme,
+          style: song.style ?? "pop",
+        }),
+      });
+
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setResults(data.results ?? []);
     } catch (err) {
-      console.error("Erreur génération:", err);
-      setResults(["Erreur lors de la génération. Réessayez."]);
+      setError(err instanceof Error ? err.message : "Erreur de génération");
     } finally {
       setIsLoading(false);
     }
   }, [activeGen, theme, song]);
 
   const copyResult = (text: string) => {
-    navigator.clipboard.writeText(text.replace(/\*\*/g, ""));
+    navigator.clipboard.writeText(text);
   };
 
   return (
     <div className="p-4 space-y-4">
-      {/* Sub-tabs */}
       <div className="grid grid-cols-2 gap-1.5">
         {[
           { key: "hooks" as const, label: "Hooks", icon: <Lightbulb size={12} /> },
@@ -71,7 +57,7 @@ export default function GeneratorPanel({ song }: GeneratorPanelProps) {
         ].map((tab) => (
           <button
             key={tab.key}
-            onClick={() => { setActiveGen(tab.key); setResults([]); }}
+            onClick={() => { setActiveGen(tab.key); setResults([]); setError(null); }}
             className={`flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               activeGen === tab.key
                 ? "bg-studio-accent text-white"
@@ -84,7 +70,6 @@ export default function GeneratorPanel({ song }: GeneratorPanelProps) {
         ))}
       </div>
 
-      {/* Input */}
       {activeGen !== "rewrite" ? (
         <div className="space-y-2">
           <input
@@ -99,13 +84,13 @@ export default function GeneratorPanel({ song }: GeneratorPanelProps) {
           />
           <button
             onClick={generate}
-            disabled={isLoading}
+            disabled={isLoading || !theme.trim()}
             className="w-full flex items-center justify-center gap-2 py-2 bg-studio-accent hover:bg-studio-accent-dim disabled:opacity-50 rounded-lg text-white text-sm font-medium transition-colors"
           >
             {isLoading ? (
-              <><Loader2 size={14} className="animate-spin" /> Génération...</>
+              <><Loader2 size={14} className="animate-spin" /> Génération en cours...</>
             ) : (
-              <><Wand2 size={14} /> Générer</>
+              <><Wand2 size={14} /> Générer avec Mistral</>
             )}
           </button>
         </div>
@@ -113,10 +98,13 @@ export default function GeneratorPanel({ song }: GeneratorPanelProps) {
         <RewritePanel style={song.style ?? "pop"} />
       )}
 
-      {/* Résultats */}
+      {error && <p className="text-xs text-red-400 text-center">{error}</p>}
+
       {results.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs text-studio-muted uppercase tracking-wider">{results.length} suggestions</p>
+          <p className="text-xs text-studio-muted uppercase tracking-wider">
+            {results.length} suggestions
+          </p>
           <div className="space-y-1.5 max-h-72 overflow-y-auto">
             {results.map((result, i) => (
               <div
@@ -124,9 +112,7 @@ export default function GeneratorPanel({ song }: GeneratorPanelProps) {
                 onClick={() => copyResult(result)}
                 className="p-2.5 bg-studio-panel border border-studio-border hover:border-studio-accent/40 rounded-lg text-xs text-studio-text cursor-pointer hover:bg-studio-hover transition-all group"
               >
-                <p dangerouslySetInnerHTML={{
-                  __html: result.replace(/\*\*(.*?)\*\*/g, '<strong class="text-studio-accent">$1</strong>')
-                }} />
+                <p>{result}</p>
                 <span className="text-studio-muted text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">
                   Cliquer pour copier
                 </span>
@@ -144,43 +130,29 @@ function RewritePanel({ style }: { style: string }) {
   const [mode, setMode] = useState<"poetique" | "sombre" | "simple" | "intense">("poetique");
   const [result, setResult] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const rewrite = useCallback(async () => {
     if (!text.trim()) return;
     setIsLoading(true);
+    setError(null);
 
-    // Simulation de réécriture (sans API externe)
-    // En production : connecter à une vraie API LLM
-    await new Promise((r) => setTimeout(r, 600));
+    try {
+      const res = await fetch("/api/generate-ideas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "rewrite", text, mode, style }),
+      });
 
-    const rewrites: Record<string, string> = {
-      poetique: `[Version poétique]\n${text
-        .replace(/je suis/gi, "mon âme est")
-        .replace(/tu es/gi, "tu portes en toi")
-        .replace(/amour/gi, "tendre flamme")
-        .replace(/nuit/gi, "nuit profonde")}`,
-      sombre: `[Version sombre]\n${text
-        .replace(/amour/gi, "poison sucré")
-        .replace(/soleil/gi, "astre mort")
-        .replace(/rêve/gi, "illusion vaine")
-        .replace(/vie/gi, "lente agonie")}`,
-      simple: `[Version simplifiée]\n${text
-        .replace(/[,;:]/g, "")
-        .split("\n")
-        .map((l) => l.trim())
-        .filter(Boolean)
-        .join("\n")}`,
-      intense: `[Version intense]\n${text
-        .replace(/pas/gi, "JAMAIS")
-        .replace(/peu/gi, "TROP")
-        .toUpperCase()
-        .toLowerCase()
-        .replace(/\b(jamais|trop|tout|rien)\b/g, (m) => m.toUpperCase())}`,
-    };
-
-    setResult(rewrites[mode] || text);
-    setIsLoading(false);
-  }, [text, mode]);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setResult(data.raw ?? "");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [text, mode, style]);
 
   return (
     <div className="space-y-3">
@@ -196,7 +168,7 @@ function RewritePanel({ style }: { style: string }) {
           <button
             key={m}
             onClick={() => setMode(m)}
-            className={`py-1 rounded text-xs capitalize transition-colors ${
+            className={`py-1 rounded text-xs transition-colors ${
               mode === m
                 ? "bg-studio-accent text-white"
                 : "bg-studio-panel text-studio-muted border border-studio-border hover:text-studio-text"
@@ -212,8 +184,9 @@ function RewritePanel({ style }: { style: string }) {
         className="w-full py-2 bg-studio-accent hover:bg-studio-accent-dim disabled:opacity-50 rounded-lg text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
       >
         {isLoading ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />}
-        Réécrire
+        Réécrire avec Mistral
       </button>
+      {error && <p className="text-xs text-red-400">{error}</p>}
       {result && (
         <div
           onClick={() => navigator.clipboard.writeText(result)}

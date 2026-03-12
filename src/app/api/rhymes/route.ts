@@ -26,9 +26,17 @@ export async function GET(req: NextRequest) {
           messages: [
             {
               role: "user",
-              content: `Donne-moi exactement ${limit} mots français qui riment avec "${cleanWord}". 
-              Réponds UNIQUEMENT avec les mots séparés par des virgules, sans explication, sans numérotation.
-              Exemple de format attendu : mot1, mot2, mot3`
+              content: `Tu es un expert en poésie et versification française.
+Trouve ${limit} mots français qui riment VRAIMENT avec "${cleanWord}".
+
+Règles strictes :
+- Une vraie rime = même son final (ex: "fantastique" rime avec "mystique", "plastique", "magique")
+- Privilégie les rimes riches (2+ sons en commun à la fin)
+- Mots courants utilisables dans une chanson ou un poème
+- PAS de mots inventés
+- PAS de répétition du mot original
+
+Réponds UNIQUEMENT avec les mots séparés par des virgules, rien d'autre.`
             }
           ],
           max_tokens: 200,

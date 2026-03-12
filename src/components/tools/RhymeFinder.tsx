@@ -20,15 +20,23 @@ export default function RhymeFinder() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const search = useCallback(async () => {
+ const search = useCallback(async () => {
     if (!word.trim()) return;
     setIsLoading(true);
     setError(null);
+    setResults([]);
     try {
       const res = await fetch(`/api/rhymes?word=${encodeURIComponent(word.trim())}`);
       const data = await res.json();
       if (data.rhymes) {
-        setResults(data.rhymes);
+        // Dédoublonner les résultats
+        const seen = new Set<string>();
+        const unique = data.rhymes.filter((r: { word: string }) => {
+          if (seen.has(r.word)) return false;
+          seen.add(r.word);
+          return true;
+        });
+        setResults(unique);
       } else {
         setError("Aucune rime trouvée");
       }

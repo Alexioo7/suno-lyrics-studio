@@ -12,6 +12,26 @@ import {
   BookOpen, Zap, CheckCircle2, Lightbulb
 } from "lucide-react";
 import type { Song, SongStatus } from "@/types";
+const SONG_STRUCTURES = [
+  { id: "CVCVCB",  label: "Pop classique",       blocks: ["chorus","verse","chorus","verse","chorus","bridge"],          description: "La plus utilisée dans le Top 40. Accroche immédiate." },
+  { id: "VCVC",    label: "Couplet-Refrain",      blocks: ["verse","chorus","verse","chorus"],                           description: "Simple et efficace. Parfaite pour les ballades." },
+  { id: "VVCVC",   label: "Ballade (Adele)",      blocks: ["verse","verse","chorus","verse","chorus"],                   description: "Laisse le temps à l'histoire de s'installer." },
+  { id: "CVVCVC",  label: "Hook d'abord (Rap)",   blocks: ["chorus","verse","verse","chorus","verse","chorus"],          description: "Accroche l'auditeur dès la première seconde." },
+  { id: "VCVCBC",  label: "Pop avec bridge",      blocks: ["verse","chorus","verse","chorus","bridge","chorus"],         description: "Le bridge apporte une surprise avant le final." },
+  { id: "VVVC",    label: "Chanson française",    blocks: ["verse","verse","verse","chorus"],                            description: "Structure narrative, laisse la place à l'histoire." },
+  { id: "VCPCPC",  label: "Avec pré-refrain",     blocks: ["verse","chorus","verse","chorus","bridge","chorus"],         description: "Le pré-refrain crée la tension avant le refrain." },
+  { id: "VVV",     label: "Folk / Poème",         blocks: ["verse","verse","verse"],                                     description: "Pas de refrain, juste l'histoire. Style Bob Dylan." },
+];
+
+const BLOCK_COLORS: Record<string, string> = {
+  verse: "#1d4ed8", chorus: "#4f46e5", bridge: "#7c3aed",
+  intro: "#0891b2", outro: "#475569", other: "#6b6b8a",
+};
+
+const BLOCK_LABELS: Record<string, string> = {
+  verse: "Couplet", chorus: "Refrain", bridge: "Bridge",
+  intro: "Intro", outro: "Outro", other: "Autre",
+};
 
 interface SongWithMeta extends Partial<Song> {
   id: string;
@@ -39,7 +59,9 @@ export default function LibraryView({ initialSongs }: LibraryViewProps) {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<SongStatus | "all">("all");
   const [isCreating, setIsCreating] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
+const [newTitle, setNewTitle] = useState("");
+  const [newStyle, setNewStyle] = useState("pop");
+  const [newStructure, setNewStructure] = useState("CVCVCB");
 
   const filtered = songs.filter((s) => {
     const matchSearch =
@@ -50,13 +72,17 @@ export default function LibraryView({ initialSongs }: LibraryViewProps) {
     return matchSearch && matchStatus;
   });
 
-  const createSong = useCallback(async () => {
+ const createSong = useCallback(async () => {
     if (!newTitle.trim()) return;
     try {
       const res = await fetch("/api/songs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: newTitle.trim() }),
+        body: JSON.stringify({ 
+          title: newTitle.trim(),
+          style: newStyle,
+          structure: newStructure,
+        }),
       });
       const data = await res.json();
       if (data.song) {
@@ -101,37 +127,80 @@ export default function LibraryView({ initialSongs }: LibraryViewProps) {
       {/* Main */}
       <main className="flex-1 max-w-5xl mx-auto w-full p-6 space-y-6">
         {/* Create form */}
-        {isCreating && (
-          <div className="bg-studio-panel border border-studio-border rounded-xl p-4 animate-fade-in">
-            <p className="text-sm text-studio-muted mb-3">Titre de la nouvelle chanson</p>
-            <div className="flex gap-2">
-              <input
-                autoFocus
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") createSong();
-                  if (e.key === "Escape") setIsCreating(false);
-                }}
-                placeholder="ex: Novembre dans mes veines..."
-                className="flex-1 bg-studio-surface border border-studio-border rounded-lg px-3 py-2 text-studio-text placeholder:text-studio-muted text-sm focus:outline-none focus:border-studio-accent"
-              />
-              <button
-                onClick={createSong}
-                disabled={!newTitle.trim()}
-                className="px-4 py-2 bg-studio-accent hover:bg-studio-accent-dim disabled:opacity-50 rounded-lg text-white text-sm font-medium transition-colors"
-              >
-                Créer
-              </button>
-              <button
-                onClick={() => setIsCreating(false)}
-                className="px-3 py-2 text-studio-muted hover:text-studio-text rounded-lg text-sm transition-colors"
-              >
-                Annuler
-              </button>
-            </div>
-          </div>
-        )}
+      {isCreating && (
+  <div className="bg-studio-panel border border-studio-border rounded-xl p-4 animate-fade-in space-y-3">
+    <p className="text-sm text-studio-muted mb-1">Nouvelle chanson</p>
+    
+    <input
+      autoFocus
+      value={newTitle}
+      onChange={(e) => setNewTitle(e.target.value)}
+      onKeyDown={(e) => { if (e.key === "Enter") createSong(); if (e.key === "Escape") setIsCreating(false); }}
+      placeholder="Titre de la chanson..."
+      className="w-full bg-studio-surface border border-studio-border rounded-lg px-3 py-2 text-studio-text placeholder:text-studio-muted text-sm focus:outline-none focus:border-studio-accent"
+    />
+
+    <div className="grid grid-cols-2 gap-2">
+      <div>
+        <p className="text-xs text-studio-muted mb-1">Style musical</p>
+        <select
+          value={newStyle}
+          onChange={(e) => setNewStyle(e.target.value)}
+          className="w-full bg-studio-surface border border-studio-border rounded-lg px-2 py-2 text-sm text-studio-text focus:outline-none focus:border-studio-accent"
+        >
+          {["pop","rap","chanson française","UK drill","R&B","rock","hyperpop","reggaeton","afrobeat","folk"].map(s => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <p className="text-xs text-studio-muted mb-1">Structure</p>
+        <select
+          value={newStructure}
+          onChange={(e) => setNewStructure(e.target.value)}
+          className="w-full bg-studio-surface border border-studio-border rounded-lg px-2 py-2 text-sm text-studio-text focus:outline-none focus:border-studio-accent"
+        >
+          {SONG_STRUCTURES.map(s => (
+            <option key={s.id} value={s.id}>{s.label}</option>
+          ))}
+        </select>
+      </div>
+    </div>
+
+    {newStructure && (
+      <div className="bg-studio-surface rounded-lg p-3">
+        <p className="text-xs text-studio-muted mb-1">Aperçu de la structure</p>
+        <div className="flex flex-wrap gap-1">
+          {SONG_STRUCTURES.find(s => s.id === newStructure)?.blocks.map((b, i) => (
+            <span key={i} className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: BLOCK_COLORS[b] + "22", color: BLOCK_COLORS[b] }}>
+              {BLOCK_LABELS[b]}
+            </span>
+          ))}
+        </div>
+        <p className="text-xs text-studio-muted mt-1.5 italic">
+          {SONG_STRUCTURES.find(s => s.id === newStructure)?.description}
+        </p>
+      </div>
+    )}
+
+    <div className="flex gap-2">
+      <button
+        onClick={createSong}
+        disabled={!newTitle.trim()}
+        className="flex-1 px-4 py-2 bg-studio-accent hover:bg-studio-accent-dim disabled:opacity-50 rounded-lg text-white text-sm font-medium transition-colors"
+      >
+        Créer
+      </button>
+      <button
+        onClick={() => setIsCreating(false)}
+        className="px-3 py-2 text-studio-muted hover:text-studio-text rounded-lg text-sm transition-colors"
+      >
+        Annuler
+      </button>
+    </div>
+  </div>
+)}
 
         {/* Search & Filters */}
         <div className="flex flex-col sm:flex-row gap-3">

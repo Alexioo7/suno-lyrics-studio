@@ -21,6 +21,15 @@ export async function POST(req: NextRequest) {
       };
       prompt = `Tu es un parolier expert. Réécris ce texte en version ${modes[mode] ?? mode}. Réponds UNIQUEMENT avec le texte réécrit.\n\nTexte original :\n${text}`;
     }
+} else if (type === "coach") {
+  prompt = `Tu es un coach expert en écriture de chansons françaises (style ${style}).
+Analyse ces paroles et donne exactement 5 conseils concrets et bienveillants pour les améliorer.
+Chaque conseil doit être actionnable et spécifique (rimes, rythme, mesures, structure, répétitions, images, etc.)
+Format : une phrase par conseil, sans numérotation ni tiret, directement le conseil.
+
+Paroles à analyser :
+${text}`;
+}
 
     const res = await fetch("https://api.mistral.ai/v1/chat/completions", {
       method: "POST",

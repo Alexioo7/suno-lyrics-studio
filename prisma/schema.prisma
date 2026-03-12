@@ -27,6 +27,7 @@ model User {
 model Song {
   id          String   @id @default(cuid())
   title       String
+  artist      String?
   description String?
   status      String   @default("idea") // idea | drafting | generated | published
   style       String?  // pop | drill | chanson | etc.

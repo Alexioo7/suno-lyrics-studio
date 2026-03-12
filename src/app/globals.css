@@ -1,0 +1,132 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@layer base {
+  :root {
+    --background: 240 10% 6%;
+    --foreground: 240 10% 90%;
+    --card: 240 10% 8%;
+    --card-foreground: 240 10% 90%;
+    --popover: 240 10% 9%;
+    --popover-foreground: 240 10% 90%;
+    --primary: 258 80% 70%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 10% 14%;
+    --secondary-foreground: 240 10% 80%;
+    --muted: 240 10% 12%;
+    --muted-foreground: 240 10% 50%;
+    --accent: 258 80% 65%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 10% 16%;
+    --input: 240 10% 14%;
+    --ring: 258 80% 65%;
+    --radius: 0.5rem;
+    --font-display: 'Playfair Display', serif;
+    --font-sans: 'DM Sans', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-studio-bg text-studio-text font-sans;
+    background-image: 
+      radial-gradient(ellipse at 20% 50%, rgba(108, 99, 255, 0.05) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(168, 85, 247, 0.04) 0%, transparent 50%);
+  }
+  
+  /* Scrollbar personnalisée */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0d0d14;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2a2a3e;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #6c63ff;
+  }
+}
+
+/* ─── TipTap Editor Styles ─────────────────────────────────────────────────── */
+.tiptap-editor .ProseMirror {
+  outline: none;
+  min-height: 100px;
+  font-family: var(--font-sans);
+  color: #e2e2f0;
+  font-size: 1rem;
+  line-height: 1.8;
+  letter-spacing: 0.01em;
+}
+
+.tiptap-editor .ProseMirror p {
+  margin: 0 0 0.15em;
+}
+
+.tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #6b6b8a;
+  pointer-events: none;
+  height: 0;
+}
+
+/* ─── Block Type Colors ────────────────────────────────────────────────────── */
+.block-chorus { border-left-color: #4f46e5; }
+.block-verse  { border-left-color: #1d4ed8; }
+.block-bridge { border-left-color: #7c3aed; }
+.block-intro  { border-left-color: #0891b2; }
+.block-outro  { border-left-color: #475569; }
+.block-other  { border-left-color: #6b6b8a; }
+
+/* ─── Flow mode ────────────────────────────────────────────────────────────── */
+.flow-mode {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: #0a0a10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+}
+
+.flow-mode .flow-content {
+  max-width: 700px;
+  width: 100%;
+  padding: 4rem 2rem;
+}
+
+/* ─── Animations ───────────────────────────────────────────────────────────── */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.cursor-blink {
+  animation: blink 1.2s step-end infinite;
+}
+
+/* ─── Shimmer for loading ──────────────────────────────────────────────────── */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    #1a1a2e 25%,
+    #22223a 50%,
+    #1a1a2e 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}

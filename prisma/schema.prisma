@@ -1,0 +1,109 @@
+// Prisma schema pour Suno Lyrics Studio
+// SQLite pour développement - remplacer par PostgreSQL en production
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String?  // hashed, null si provider OAuth
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  songs    Song[]
+  promptHistory PromptHistory[]
+
+  @@index([email])
+}
+
+model Song {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  status      String   @default("idea") // idea | drafting | generated | published
+  style       String?  // pop | drill | chanson | etc.
+  mood        String?  // sad | energetic | dark | etc.
+  tempo       Int?     // BPM estimé
+  voice       String?  // male | female | androgynous
+  durationEstimate Int? // en secondes
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  blocks   Block[]
+  tags     SongTag[]
+  versions Version[]
+  promptHistory PromptHistory[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Block {
+  id       String @id @default(cuid())
+  type     String // verse | chorus | bridge | outro | intro | other
+  order    Int
+  content  String // JSON TipTap ou texte brut
+  color    String? // couleur highlight (hex)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  songId String
+  song   Song   @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  @@index([songId])
+  @@index([songId, order])
+}
+
+model Tag {
+  id    String @id @default(cuid())
+  name  String @unique
+  color String @default("#6366f1")
+
+  songs SongTag[]
+}
+
+model SongTag {
+  songId String
+  tagId  String
+  song   Song @relation(fields: [songId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([songId, tagId])
+}
+
+model Version {
+  id        String   @id @default(cuid())
+  label     String   // ex: "v1 - premier jet"
+  snapshot  String   // JSON des blocs au moment du snapshot
+  createdAt DateTime @default(now())
+
+  songId String
+  song   Song   @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  @@index([songId])
+}
+
+model PromptHistory {
+  id        String   @id @default(cuid())
+  prompt    String   // le prompt généré
+  metadata  String?  // JSON avec paramètres utilisés
+  createdAt DateTime @default(now())
+
+  songId String
+  song   Song   @relation(fields: [songId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([songId])
+}
